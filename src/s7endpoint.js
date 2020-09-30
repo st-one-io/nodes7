@@ -21,6 +21,7 @@ const CONN_DISCONNECTING = 3;
 
 /** @typedef {S7Connection.BlockCountResponse} BlockCountResponse */
 /** @typedef {S7Connection.ListBlockResponse} ListBlockResponse */
+/** @typedef {import('stream').Duplex} Duplex */
 /**
  * @typedef {object} BlockList
  * @property {ListBlockResponse[]} OB list of blocks of type OB
@@ -54,6 +55,12 @@ const CONN_DISCONNECTING = 3;
  * @property {number} [oemAdditionalId] W#16#000A: OEM ID of a module (S7-300 only)
  * @property {string} [location] W#16#000B: Location ID of a module
  */
+/**
+ * This callback will be called whenever S7Endpoint needs to get a new 
+ * communication stream to the PLC
+ * @callback GetTransport
+ * @returns {Promise<Duplex>}
+ */
 
 /**
  * Emitted when an error occurs with the underlying
@@ -69,18 +76,18 @@ const CONN_DISCONNECTING = 3;
 class S7Endpoint extends EventEmitter {
 
     /**
-     * Creates a new S7Endpoint
+     * Creates a new S7Endpoint. When supplying a {@link GetTransport} at the "customTransport"
+     * option, S7Endpoint will call it to get a communication channel to the PLC. In this case,
+     * the "host", "port", "rack" and "slot" parameters won't be used.
      * 
      * @param {object}  opts the options object
-     * @param {string}  [opts.type] the type of the connection to the PLC, either "tcp" or "mpi". If left undefined, will be automatically infered from the presence of the "host" or the "mpiAdapter" parameters
-     * @param {string}  [opts.host] the hostname or IP Address to connect to. Infers "tcp" type of connection
+     * @param {string}  [opts.host='localhost'] the hostname or IP Address to connect to
      * @param {number}  [opts.port=102] the TCP port to connect to
      * @param {number}  [opts.rack=0] the rack on the PLC configuration
      * @param {number}  [opts.slot=2] the slot on the PLC configuration
      * @param {number}  [opts.srcTSAP=0x0100] the source TSAP, when connecting using TSAP method
      * @param {number}  [opts.dstTSAP=0x0102] the destination TSAP, when connecting using TSAP method
-     * @param {*}       [opts.mpiAdapter] the MPI adapter used to communicate to the PLC. Infers "mpi" type of connection
-     * @param {number}  [opts.mpiAddress=2] the address of the PLC on the MPI bus
+     * @param {GetTransport} [opts.customTransport] allows supplying a custom function for getting a transport stream to the PLC. See {@link GetTransport}
      * @param {number}  [opts.autoReconnect=5000] the time to wait before trying to connect to the PLC again, in ms. If set to 0, disables the functionality
      * @param {object}  [opts.s7ConnOpts] the {@link S7Connection} constructor options, allowing to fine-tune specific parameters
      * 
@@ -93,63 +100,34 @@ class S7Endpoint extends EventEmitter {
 
         opts = opts || {};
 
-        // try to infer the connection type based on the present parameters
-        if (!opts.type) {
-            if (opts.host) {
-                this._connType = "tcp"
-            } else if (opts.mpiAdapter) {
-                this._connType = "mpi"
-            }
-        } else {
-            this._connType = opts.type;
-        }
-
+        /** @type {GetTransport} */
+        this._getTransport = opts.customTransport || (() => this._createIsoTransport());
 
         this._autoReconnect = opts.autoReconnect !== undefined ? opts.autoReconnect : 5000;
         this._connOptsS7 = opts.s7ConnOpts || {};
 
-        // get and validate parameters
-        if (this._connType == "tcp") {
-            if (!opts.host) {
-                throw new NodeS7Error('ERR_INVALID_ARGUMENT', "Parameter 'host' is required for 'tcp' type of connection");
-            }
-
-            let dstTSAP;
-            if (typeof opts.dstTSAP === 'number') {
-                dstTSAP = opts.dstTSAP;
-            } else {
-                let rack = typeof opts.rack === 'number' ? opts.rack : 0;
-                let slot = typeof opts.slot === 'number' ? opts.slot : 2;
-
-                dstTSAP = 0x0100 | (rack << 5) | slot;
-            }
-
-            this._connOptsTcp = {
-                host: opts.host,
-                port: opts.port || 102,
-                srcTSAP: opts.srcTSAP || 0x0100,
-                dstTSAP: dstTSAP,
-                forceClose: true //we don't send DR telegrams of ISO-on-TCP
-            }
-        } else if (this._connType == "mpi") {
-            if (!opts.mpiAdapter) {
-                throw new NodeS7Error('ERR_INVALID_ARGUMENT', "Parameter 'mpiAdapter' is required for 'mpi' type of connection");
-            }
-
-            this._mpiAdapter = opts.mpiAdapter;
-            this._mpiAdapter.on('error', e => this._onMpiAdapterError);
-            this._connOptsMpi = {
-                mpiAddress: typeof opts.mpiAddress === 'number' ? opts.mpiAddress : 2
-            }
-
-            this._connOptsS7.maxJobs = 1; // TODO FIXME a (maybe) bug in MpiAdapter prevents us to handle more than 1
+        let dstTSAP;
+        if (typeof opts.dstTSAP === 'number') {
+            dstTSAP = opts.dstTSAP;
         } else {
-            throw new NodeS7Error('ERR_INVALID_ARGUMENT', `Unknown type parameter "${opts.type}"`);
+            let rack = typeof opts.rack === 'number' ? opts.rack : 0;
+            let slot = typeof opts.slot === 'number' ? opts.slot : 2;
+
+            dstTSAP = 0x0100 | (rack << 5) | slot;
+        }
+
+        this._connOptsTcp = {
+            host: opts.host,
+            port: opts.port || 102,
+            srcTSAP: opts.srcTSAP || 0x0100,
+            dstTSAP: dstTSAP,
+            forceClose: true //we don't send DR telegrams of ISO-on-TCP
         }
 
         this._initParams();
 
         if (this._autoReconnect > 0) {
+            this._shouldConnect = true;
             this._connect();
         }
     }
@@ -160,10 +138,14 @@ class S7Endpoint extends EventEmitter {
      */
     _initParams() {
         this._connectionState = CONN_DISCONNECTED;
+        /** @type {S7Connection} */
         this._connection = null;
+        /** @type {Duplex} */
         this._transport = null;
         this._pduSize = null;
         this._reconnectTimer = null;
+        /** @type {boolean} */
+        this._shouldConnect = false;
     }
 
     /**
@@ -186,28 +168,35 @@ class S7Endpoint extends EventEmitter {
 
         this._connectionState = CONN_CONNECTING;
 
-        if (this._connType == 'tcp') {
-
-            this._transport = isoOnTcp.createConnection(this._connOptsTcp, () => {
-                if (this._connection) this._connection.connect();
-            });
+        this._getTransport().then(transport => {
+            this._transport = transport;
+            this._transport.on('error', e => this._onTransportError(e));
+            this._transport.on('close', () => this._onTransportClose());
+            this._transport.on('end', () => this._onTransportEnd());
             this._createS7Connection();
-        } else if (this._connType == 'mpi') {
+            this._connection.connect();
+        }).catch(e => this._onTransportError(e));
+    }
 
-            if (!this._mpiAdapter.isConnected) {
-                debug("S7Endpoint _connect not-disconnected");
-                this._connectionState = CONN_DISCONNECTED;
-                this._mpiAdapter.once('connect', () => this._connect());
-                return;
-            }
+    /**
+     * Creates an ISO-on-TCP transport with the parameters
+     * supplied on the constructor
+     * @private
+     * @returns {Promise<Duplex>}
+     */
+    _createIsoTransport() {
+        debug("S7Endpoint _createIsoTransport");
 
-            let mpiAddr = this._connOptsMpi.mpiAddress;
-            this._mpiAdapter.createStream(mpiAddr, this._connOptsMpi).then(stream => {
-                this._transport = stream;
-                this._createS7Connection();
-                this._connection.connect();
-            }).catch(e => this._onMpiAdapterError(e));
-        }
+        return new Promise((resolve, reject) => {
+            // handler to reject the promise on connection-time errors
+            const handleRejection = e => reject(e);
+
+            let stream = isoOnTcp.createConnection(this._connOptsTcp, () => {
+                stream.off('error', handleRejection);
+                resolve(stream);
+            });
+            stream.on('error', handleRejection);
+        })
     }
 
     /**
@@ -217,10 +206,6 @@ class S7Endpoint extends EventEmitter {
      */
     _createS7Connection() {
         debug("S7Endpoint _createS7Connection");
-
-        this._transport.on('error', e => this._onTransportError(e));
-        this._transport.on('close', () => this._onTransportClose());
-        this._transport.on('end', () => this._onTransportEnd());
 
         this._connection = new S7Connection(this._transport, this._connOptsS7);
 
@@ -233,19 +218,16 @@ class S7Endpoint extends EventEmitter {
      * Destroys the current S7Connection
      * 
      * @private
-     * @param {boolean} [skipReconnect=false]
      */
-    _destroyConnection(skipReconnect) {
+    _destroyConnection() {
         debug("S7Endpoint _destroyConnection");
 
-        if (!this._connection) return;
+        if (this._shouldConnect) this._scheduleReconnection();
 
         this._connectionState = CONN_DISCONNECTED;
-        clearTimeout(this._reconnectTimer); //ensure we're not trying again if skipReconnect=true
-
+        
+        if (!this._connection) return;
         this._connection.destroy();
-        if (!skipReconnect) this._scheduleReconnection();
-
         this._connection = null;
     }
 
@@ -265,7 +247,9 @@ class S7Endpoint extends EventEmitter {
         if (this._transport.destroy) {
             this._transport.destroy();
         } else if (this._transport._destroy) {
-            this._transport._destroy();
+            this._transport._destroy(new Error(), () => {
+                debug("S7Endpoint _destroyTransport _destroy-callback");
+            });
         }
 
         this._transport = null;
@@ -298,14 +282,13 @@ class S7Endpoint extends EventEmitter {
      * another reconnection
      * 
      * @private
-     * @param {boolean} [byUser] whether the disconnection was triggered by the user
      */
-    _disconnect(byUser) {
+    _disconnect() {
         debug("S7Endpoint _disconnect");
 
         this._connectionState = CONN_DISCONNECTED;
 
-        this._destroyConnection(byUser);
+        this._destroyConnection();
         this._closeTransport();
 
     }
@@ -371,20 +354,6 @@ class S7Endpoint extends EventEmitter {
     }
 
     /**
-     * Handles MPIAdapter's "error" events
-     * @private
-     * @param {Error} e 
-     */
-    _onMpiAdapterError(e) {
-        debug("S7Endpoint _onMpiAdapterError", e);
-
-        this._destroyConnection();
-        this._destroyTransport();
-
-        this.emit('error', e);
-    }
-
-    /**
      * Schedule a reconnection to the PLC if this
      * was configured in the constructor options
      * @private
@@ -408,6 +377,9 @@ class S7Endpoint extends EventEmitter {
      */
     _onConnectionConnected() {
         debug("S7Endpoint _onConnectionConnected");
+
+        // clear any reconnection timer that may be there
+        clearTimeout(this._reconnectTimer);
 
         if (this._pduSize != this._connection.pduSize) {
             /**
@@ -440,6 +412,7 @@ class S7Endpoint extends EventEmitter {
         debug("S7Endpoint connect");
 
         return new Promise((res, rej) => {
+            this._shouldConnect = true;
             if (this._connectionState === CONN_CONNECTED) {
                 res();
             } else if (this._connectionState === CONN_DISCONNECTING) {
@@ -461,13 +434,14 @@ class S7Endpoint extends EventEmitter {
         debug("S7Endpoint disconnect");
 
         return new Promise((res, rej) => {
+            this._shouldConnect = false;
             if (this._connectionState === CONN_DISCONNECTED) {
                 clearTimeout(this._reconnectTimer);
                 res();
             } else {
                 this.once('disconnect', res);
                 this.once('error', rej);
-                this._disconnect(true);
+                this._disconnect();
             }
         });
     }
