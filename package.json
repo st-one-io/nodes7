@@ -1,0 +1,42 @@
+{
+  "name": "@netsmarttech/nodes7",
+  "description": "A javascript library to communicate with Siemens S7 PLCs",
+  "version": "1.0.0-alpha.0",
+  "author": "Guilherme Francescon <guilherme@st-one.io>",
+  "keywords": [
+    "S7",
+    "Siemens",
+    "PLC",
+    "RFC1006",
+    "iso-on-tcp",
+    "mpi",
+    "s7-200",
+    "s7-300",
+    "s7-400",
+    "s7-1200",
+    "s7-1500",
+    "profinet"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/netsmarttech/nodes7"
+  },
+  "main": "src/index.js",
+  "scripts": {
+    "test": "nyc --reporter=html --reporter=text --reporter=text-summary mocha --timeout=3000 test/**/**.spec.js",
+    "doc": "jsdoc2md --files src/**.js > doc/API.md"
+  },
+  "engine": {
+    "node": ">= 10.0.0"
+  },
+  "license": "GPL-3.0-or-later",
+  "devDependencies": {
+    "chai": "^4.2.0",
+    "jsdoc-to-markdown": "^6.0.1",
+    "mocha": "^8.1.3",
+    "nyc": "^15.1.0"
+  },
+  "dependencies": {
+    "iso-on-tcp": "^0.1.0"
+  }
+}
