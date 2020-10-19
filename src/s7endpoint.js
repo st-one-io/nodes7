@@ -166,9 +166,20 @@ class S7Endpoint extends EventEmitter {
         this._destroyConnection();
         this._destroyTransport();
 
+        /**
+         * Emitted when we start the connection process to the PLC
+         * @event S7Endpoint#connecting
+         */
+        process.nextTick(() => this.emit('connecting'));
+
         this._connectionState = CONN_CONNECTING;
 
-        this._getTransport().then(transport => {
+        let race = Promise.race([
+            this._getTransport(),
+            new Promise((res, rej) => setTimeout(() => rej(new NodeS7Error('ERR_TIMEOUT', 'Timeout connecting to the transport')), 10000).unref())
+        ]);
+
+        race.then(transport => {
             this._transport = transport;
             this._transport.on('error', e => this._onTransportError(e));
             this._transport.on('close', () => this._onTransportClose());
@@ -225,7 +236,7 @@ class S7Endpoint extends EventEmitter {
         if (this._shouldConnect) this._scheduleReconnection();
 
         this._connectionState = CONN_DISCONNECTED;
-        
+
         if (!this._connection) return;
         this._connection.destroy();
         this._connection = null;
