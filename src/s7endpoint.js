@@ -783,6 +783,33 @@ class S7Endpoint extends EventEmitter {
     }
 
     /**
+     * Get info about all blocks from the PLC
+     * @returns {Promise<Buffer[]>}
+     */
+    async getAllBlockInfo() {
+        debug('S7Endpoint getAllBlockInfo');
+
+        let res = [];
+        let blockList = await this.listAllBlocks();
+
+        const getByType = async typ => {
+            for (const blk of blockList[typ]) {
+                res.push(await this.getBlockInfo(typ, blk.number));
+            }
+        }
+
+        await getByType('OB');
+        await getByType('DB');
+        await getByType('SDB');
+        await getByType('FC');
+        await getByType('SFC');
+        await getByType('FB');
+        await getByType('SFB');
+
+        return res;
+    }
+
+    /**
      * List all blocks of all available types
      * @returns {Promise<BlockList>}
      */
@@ -790,13 +817,13 @@ class S7Endpoint extends EventEmitter {
         debug('S7Endpoint listAllBlocks');
 
         let res = {};
-        res.OB = await this.listBlocks(constants.proto.block.type.OB);
-        res.DB = await this.listBlocks(constants.proto.block.type.DB);
-        res.SDB = await this.listBlocks(constants.proto.block.type.SDB);
-        res.FC = await this.listBlocks(constants.proto.block.type.FC);
-        res.SFC = await this.listBlocks(constants.proto.block.type.SFC);
-        res.FB = await this.listBlocks(constants.proto.block.type.FB);
-        res.SFB = await this.listBlocks(constants.proto.block.type.SFB);
+        res.OB = await this.listBlocks('OB');
+        res.DB = await this.listBlocks('DB');
+        res.SDB = await this.listBlocks('SDB');
+        res.FC = await this.listBlocks('FC');
+        res.SFC = await this.listBlocks('SFC');
+        res.FB = await this.listBlocks('FB');
+        res.SFB = await this.listBlocks('SFB');
 
         return res;
     }
@@ -865,6 +892,33 @@ class S7Endpoint extends EventEmitter {
         }
 
         return await this._connection.uploadBlock(filename);
+    }
+
+    /**
+     * Uploads all active blocks from the PLC
+     * @returns {Promise<Buffer[]>}
+     */
+    async uploadAllBlocks() {
+        debug('S7Endpoint uploadAllBlocks');
+
+        let res = [];
+        let blockList = await this.listAllBlocks();
+        
+        const uploadType = async typ => {
+            for (const blk of blockList[typ]) {
+                res.push(await this.uploadBlock(typ, blk.number));
+            }
+        }
+
+        await uploadType('OB');
+        await uploadType('DB');
+        await uploadType('SDB');
+        await uploadType('FC');
+        await uploadType('SFC');
+        await uploadType('FB');
+        await uploadType('SFB');
+
+        return res;
     }
 
     /**
