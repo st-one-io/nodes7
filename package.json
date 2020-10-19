@@ -1,5 +1,5 @@
 {
-  "name": "@netsmarttech/nodes7",
+  "name": "@st-one-io/nodes7",
   "description": "A javascript library to communicate with Siemens S7 PLCs",
   "version": "1.0.0-alpha.0",
   "author": "Guilherme Francescon <guilherme@st-one.io>",
@@ -19,7 +19,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/netsmarttech/nodes7"
+    "url": "https://github.com/st-one-io/nodes7"
   },
   "main": "src/index.js",
   "scripts": {
