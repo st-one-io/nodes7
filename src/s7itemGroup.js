@@ -358,30 +358,28 @@ class S7ItemGroup extends EventEmitter {
     /**
      * Add an item or a group of items to be read from "readAllItems"
      * 
-     * @param {string|Array<string>} tags the tag or list of tags to be added
+     * @param {string|S7Item|Array<string>|Array<S7Item>} tags the tag or list of tags to be added
      * @throws if the supplied parameter is not a string or an array of strings
      * @throws if the format of the address of the tag is invalid
      */
     addItems(tags) {
         debug("S7ItemGroup addItems", tags);
 
-        if (typeof tags === 'string') {
-            tags = [tags];
-        } else if (!Array.isArray(tags)) {
-            throw new NodeS7Error('ERR_INVALID_ARGUMENT', "Parameter must be a string or an array of strings");
-        }
+        let tagsArr = Array.isArray(tags) ? tags : [tags];
 
-        for (const tag of tags) {
+        for (const tag of tagsArr) {
             debug("S7ItemGroup addItems item", tag);
 
-            if (typeof tag !== 'string') {
-                throw new NodeS7Error('ERR_INVALID_ARGUMENT', "Tags must be of string type");
+            if (tag instanceof S7Item){
+                this._items.set(tag.name, tag);
+            } else if (typeof tag === 'string') {
+                let addr = this._translationCallback(tag);
+                let item = new S7Item(tag, addr);
+    
+                this._items.set(tag, item);
+            } else {
+                throw new NodeS7Error('ERR_INVALID_ARGUMENT', "Tags must be of type string or S7Item");
             }
-
-            let addr = this._translationCallback(tag);
-            let item = new S7Item(tag, addr);
-
-            this._items.set(tag, item);
         }
 
         // invalidate computed read packets
