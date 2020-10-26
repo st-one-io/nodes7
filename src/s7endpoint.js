@@ -11,6 +11,7 @@ const util = require('util');
 const debug = util.debuglog('nodes7');
 const isoOnTcp = require('iso-on-tcp');
 
+const S7Item = require('./s7item');
 const S7Connection = require('./s7connection.js');
 const NodeS7Error = require('./errors.js');
 
@@ -613,6 +614,22 @@ class S7Endpoint extends EventEmitter {
         debug('S7Endpoint readFlags', address, length);
 
         return await this.readArea(constants.proto.area.FLAGS, address, length);
+    }
+
+    /**
+     * Reads a S7Item individually
+     * 
+     * @param {S7Item} item 
+     */
+    async readItem(item) {
+        debug('S7Endpoint readItem');
+        
+        let req = item.getReadItemRequest();
+        let res = await this.readVars([req]);
+        item.readValueFromResponse(res[0], req);
+        item.updateValueFromBuffer();
+
+        return item.value;
     }
 
     /**
