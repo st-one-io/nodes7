@@ -41,9 +41,9 @@ const CONN_DISCONNECTING = 3;
  */
 /**
  * @typedef {object} ComponentIdentification
- * @property {string} [systemName] W#16#0001: Name of the automation system
+ * @property {string} [plcName] W#16#0001: Name of the automation system
  * @property {string} [moduleName] W#16#0002: Name of the module
- * @property {string} [plantName] W#16#0003: Plant designation of the module
+ * @property {string} [plantID] W#16#0003: Plant designation of the module
  * @property {string} [copyright] W#16#0004: Copyright entry
  * @property {string} [serialNumber] W#16#0005: Serial number of the module
  * @property {string} [partType] W#16#0007: Module type name
@@ -920,7 +920,7 @@ class S7Endpoint extends EventEmitter {
 
         let res = [];
         let blockList = await this.listAllBlocks();
-        
+
         const uploadType = async typ => {
             for (const blk of blockList[typ]) {
                 res.push(await this.uploadBlock(typ, blk.number));
@@ -1001,7 +1001,11 @@ class S7Endpoint extends EventEmitter {
 
         let res = await this.getSSL(0x0011, 0);
 
-        let moduleInfo = {};
+        let moduleInfo = {
+            moduleOrderNumber: null,
+            hardwareOrderNumber: null,
+            firmwareOrderNumber: null
+        };
 
         for (const buf of res) {
             if (buf.length != 28) throw new NodeS7Error('ERR_UNEXPECTED_RESPONSE', `Unexpected buffer size of [${buf.length}] != 28`);
@@ -1041,7 +1045,23 @@ class S7Endpoint extends EventEmitter {
 
         let devInfo = await this.getSSL(0x001c, 0);
 
-        let deviceInfo = {};
+        /** @type {ComponentIdentification} */
+        let deviceInfo = {
+            plcName: null,
+            moduleName: null,
+            plantID: null,
+            copyright: null,
+            serialNumber: null,
+            partType: null,
+            mmcSerialNumber: null,
+            vendorId: null,
+            profileId: null,
+            profileSpecific: null,
+            oemString: null,
+            oemId: null,
+            oemAdditionalId: null,
+            location: null
+        };
 
         for (const buf of devInfo) {
             let id = buf.readUInt16BE(0);
@@ -1082,7 +1102,7 @@ class S7Endpoint extends EventEmitter {
                     deviceInfo.location = buf.toString('ascii', 2).replace(/\x00/g, '');
                     break;
                 default:
-                //unknown id, ignore it
+                    //unknown id, ignore it
             }
         }
 
