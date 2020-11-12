@@ -913,9 +913,10 @@ class S7Endpoint extends EventEmitter {
 
     /**
      * Uploads all active blocks from the PLC
+     * @param {boolean} [strict=false] If true, errors on the upload of individual blocks will cause the whole upload to fail
      * @returns {Promise<Buffer[]>}
      */
-    async uploadAllBlocks() {
+    async uploadAllBlocks(strict) {
         debug('S7Endpoint uploadAllBlocks');
 
         let res = [];
@@ -923,7 +924,12 @@ class S7Endpoint extends EventEmitter {
 
         const uploadType = async typ => {
             for (const blk of blockList[typ]) {
-                res.push(await this.uploadBlock(typ, blk.number));
+                try {
+                    res.push(await this.uploadBlock(typ, blk.number));
+                } catch (e) {
+                    debug('S7Endpoint uploadAllBlocks err-upload', typ, blk.number, e);
+                    if (strict) throw e;
+                }
             }
         }
 
