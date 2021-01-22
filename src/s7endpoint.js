@@ -535,7 +535,7 @@ class S7Endpoint extends EventEmitter {
         for (let ptr = 0; ptr < length; ptr += maxPayload) {
             let item = [{
                 area, db,
-                address: address,
+                address: address + ptr,
                 transport: constants.proto.transport.BYTE,
                 length: Math.min(length - ptr, maxPayload)
             }];
@@ -701,7 +701,7 @@ class S7Endpoint extends EventEmitter {
             let chunk = data.slice(ptr, Math.min(dataLength - ptr, maxPayload))
             let item = [{
                 area, db,
-                address: address,
+                address: address + ptr,
                 transport: constants.proto.transport.BYTE,
                 dataTransport: constants.proto.dataTransport.BBYTE,
                 data: chunk,
