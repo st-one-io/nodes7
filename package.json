@@ -1,7 +1,7 @@
 {
   "name": "@st-one-io/nodes7",
   "description": "A javascript library to communicate with Siemens S7 PLCs",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "author": "Guilherme Francescon <guilherme@st-one.io>",
   "keywords": [
     "S7",
