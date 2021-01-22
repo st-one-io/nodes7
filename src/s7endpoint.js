@@ -542,25 +542,24 @@ class S7Endpoint extends EventEmitter {
             requests.push(this.readVars(item));
         }
 
-        return Promise.all(requests).then(results => {
-            debug('S7Endpoint readArea response', results);
+        let results = await Promise.all(requests)
+        debug('S7Endpoint readArea response', results);
 
-            let data = [];
-            for (const res of results) {
-                if (res.length > 1) throw new NodeS7Error('ERR_UNEXPECTED_RESPONSE', "Illegal item count on PLC response");
+        let data = [];
+        for (const res of results) {
+            if (res.length > 1) throw new NodeS7Error('ERR_UNEXPECTED_RESPONSE', "Illegal item count on PLC response");
 
-                let code = res[0].returnCode;
-                if (code !== constants.proto.retval.DATA_OK) {
-                    let errDescr = constants.proto.retvalDesc[code] || '<Unknown return code>';
-                    throw new NodeS7Error(code, `Read error [0x${code.toString(16)}]: ${errDescr}`);
-                }
-
-                // TODO should we check the transport of the response?
-                data.push(res[0].data);
+            let code = res[0].returnCode;
+            if (code !== constants.proto.retval.DATA_OK) {
+                let errDescr = constants.proto.retvalDesc[code] || '<Unknown return code>';
+                throw new NodeS7Error(code, `Read error [0x${code.toString(16)}]: ${errDescr}`);
             }
 
-            return Buffer.concat(data);
-        });
+            // TODO should we check the transport of the response?
+            data.push(res[0].data);
+        }
+
+        return Buffer.concat(data);
     }
 
     /**
@@ -710,19 +709,18 @@ class S7Endpoint extends EventEmitter {
             requests.push(this.writeVars(item));
         }
 
-        return Promise.all(requests).then(results => {
-            debug('S7Endpoint writeArea response', results);
+        let results = await Promise.all(requests)
+        debug('S7Endpoint writeArea response', results);
 
-            for (const res of results) {
-                if (res.length > 1) throw new NodeS7Error('ERR_UNEXPECTED_RESPONSE', "Illegal item count on PLC response");
+        for (const res of results) {
+            if (res.length > 1) throw new NodeS7Error('ERR_UNEXPECTED_RESPONSE', "Illegal item count on PLC response");
 
-                let code = res[0].returnCode;
-                if (code !== constants.proto.retval.DATA_OK) {
-                    let errDescr = constants.proto.retvalDesc[code] || '<Unknown return code>';
-                    throw new NodeS7Error(code, `Write error [0x${code.toString(16)}]: ${errDescr}`);
-                }
+            let code = res[0].returnCode;
+            if (code !== constants.proto.retval.DATA_OK) {
+                let errDescr = constants.proto.retvalDesc[code] || '<Unknown return code>';
+                throw new NodeS7Error(code, `Write error [0x${code.toString(16)}]: ${errDescr}`);
             }
-        });
+        }
     }
 
     /**
