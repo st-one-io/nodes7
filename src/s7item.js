@@ -274,6 +274,8 @@ function toBCD(n) {
 function getValueByDataType(buffer, type, offset, bitOffset, length = 1) {
     let year, month, day, hour, min, sec, ms_1, ms_2, ns;
     switch (type) {
+        case "DOUBLE":
+            return buffer.readDoubleBE(offset);
         case "REAL":
             return buffer.readFloatBE(offset);
         case "DWORD":
@@ -288,6 +290,8 @@ function getValueByDataType(buffer, type, offset, bitOffset, length = 1) {
             return buffer.readUInt16BE(offset);
         case "BYTE":
             return buffer.readUInt8(offset);
+        case "SBYTE":
+            return buffer.readInt8(offset);
         case "CHAR":
             return buffer.toString('ascii', offset, offset + length);
         case "STRING":
@@ -358,6 +362,7 @@ function bufferWriteByDataType(buffer, data, type, offset, length = 1) {
 
     // type check
     switch (type) {
+        case "DOUBLE":
         case "REAL":
         case "DWORD":
         case "DINT":
@@ -366,6 +371,7 @@ function bufferWriteByDataType(buffer, data, type, offset, length = 1) {
         case "INT":
         case "WORD":
         case "BYTE":
+        case "SBYTE":
             if (typeof data !== 'number') throw new NodeS7Error('ERR_INVALID_ARGUMENT', `Data for item of type '${type}' must be a number`);
             break;
         case "CHAR":
@@ -404,6 +410,8 @@ function bufferWriteByDataType(buffer, data, type, offset, length = 1) {
 
 
     switch (type) {
+        case "DOUBLE":
+            return buffer.writeDoubleBE(data, offset);
         case "REAL":
             return buffer.writeFloatBE(data, offset);
         case "DWORD":
@@ -418,6 +426,8 @@ function bufferWriteByDataType(buffer, data, type, offset, length = 1) {
             return buffer.writeUInt16BE(data, offset);
         case "BYTE":
             return buffer.writeUInt8(data, offset);
+        case "SBYTE":
+            return buffer.writeInt8(data, offset);
         case "CHAR":
             // this is supposed to be a clean buffer, no need to empty it first
             return buffer.write(data, offset, length, 'ascii');

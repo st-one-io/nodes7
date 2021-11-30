@@ -89,6 +89,7 @@ class AddressParserNodeS7 {
             switch (match_area) {
                 case "X":
                 case "BYTE":
+                case "SBYTE":
                 case "CHAR":
                 case "STRING":
                 case "INT":
@@ -96,6 +97,7 @@ class AddressParserNodeS7 {
                 case "WORD":
                 case "DWORD":
                 case "REAL":
+                case "DOUBLE":
                 case "DT":
                 case "DTZ":
                 case "DTL":
@@ -126,6 +128,9 @@ class AddressParserNodeS7 {
                     break;
                 case "R":
                     dataType = "REAL";
+                    break;
+                case "LR":
+                    dataType = "DOUBLE";
                     break;
                 default:
                     throw new NodeS7Error('ERR_PARSE_DB_DATATYPE', `Unknown DB data type "${match_area}" for address "${address}"`, { item: address });
@@ -189,6 +194,9 @@ class AddressParserNodeS7 {
                 case "R":
                     dataType = "REAL";
                     break;
+                case "LR":
+                    dataType = "DOUBLE";
+                    break;
                 default:
                     throw new NodeS7Error('ERR_PARSE_DATATYPE', `Unknown data type "${dataType}" for address "${address}"`, { item: address });
             }
@@ -251,6 +259,7 @@ class AddressParserNodeS7 {
                 break;
             case "DT":
             case "DTZ":
+            case "DOUBLE":
                 dataTypeLength = 8;
                 break;
             case "REAL":
@@ -266,6 +275,7 @@ class AddressParserNodeS7 {
                 break;
             case "X":
             case "BYTE":
+            case "SBYTE":
             case "CHAR":
                 dataTypeLength = 1;
                 break;
