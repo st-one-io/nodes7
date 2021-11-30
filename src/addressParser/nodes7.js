@@ -89,6 +89,7 @@ class AddressParserNodeS7 {
             switch (match_area) {
                 case "X":
                 case "BYTE":
+                case "SBYTE":
                 case "CHAR":
                 case "STRING":
                 case "INT":
@@ -274,6 +275,7 @@ class AddressParserNodeS7 {
                 break;
             case "X":
             case "BYTE":
+            case "SBYTE":
             case "CHAR":
                 dataTypeLength = 1;
                 break;
