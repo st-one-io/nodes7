@@ -340,6 +340,15 @@ function getValueByDataType(buffer, type, offset, bitOffset, length = 1) {
             sec = buffer.readUInt8(offset + 7);
             ns = buffer.readUInt32BE(offset + 8);
             return new Date(Date.UTC(year, month - 1, day, hour, min, sec, ns / 1e6));
+        /** Reversed datatypes (little-endian) */
+        case "RREAL":
+            return buffer.readFloatLE(offset);
+        case "RDWORD":
+            return buffer.readUInt32LE(offset);
+        case "RDINT":
+            return buffer.readInt32LE(offset);
+        case "RINT":
+            return buffer.readInt16LE(offset);
         default:
             throw new Error(`Cannot parse data of unknown type "${this._props.datatype}" for item "${this._string}"`);
     }
