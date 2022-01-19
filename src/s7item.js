@@ -345,6 +345,8 @@ function getValueByDataType(buffer, type, offset, bitOffset, length = 1) {
             return buffer.readFloatLE(offset);
         case "RDWORD":
             return buffer.readUInt32LE(offset);
+        case "RWORD":
+            return buffer.readUInt16LE(offset);
         case "RDINT":
             return buffer.readInt32LE(offset);
         case "RINT":
