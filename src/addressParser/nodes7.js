@@ -256,10 +256,15 @@ class AddressParserNodeS7 {
             case "REAL":
             case "DWORD":
             case "DINT":
+            case "RREAL":
+            case "RDWORD":
+            case "RDINT":
                 dataTypeLength = 4;
                 break;
             case "INT":
             case "WORD":
+            case "RINT":
+            case "RWORD":
             case "TIMER":
             case "COUNTER":
                 dataTypeLength = 2;
