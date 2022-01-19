@@ -340,6 +340,17 @@ function getValueByDataType(buffer, type, offset, bitOffset, length = 1) {
             sec = buffer.readUInt8(offset + 7);
             ns = buffer.readUInt32BE(offset + 8);
             return new Date(Date.UTC(year, month - 1, day, hour, min, sec, ns / 1e6));
+        /** Reversed datatypes (little-endian) */
+        case "RREAL":
+            return buffer.readFloatLE(offset);
+        case "RDWORD":
+            return buffer.readUInt32LE(offset);
+        case "RWORD":
+            return buffer.readUInt16LE(offset);
+        case "RDINT":
+            return buffer.readInt32LE(offset);
+        case "RINT":
+            return buffer.readInt16LE(offset);
         default:
             throw new Error(`Cannot parse data of unknown type "${this._props.datatype}" for item "${this._string}"`);
     }
@@ -365,6 +376,11 @@ function bufferWriteByDataType(buffer, data, type, offset, length = 1) {
         case "COUNTER":
         case "INT":
         case "WORD":
+        case "RREAL":
+        case "RDWORD":
+        case "RDINT":
+        case "RINT":
+        case "RWORD":
         case "BYTE":
             if (typeof data !== 'number') throw new NodeS7Error('ERR_INVALID_ARGUMENT', `Data for item of type '${type}' must be a number`);
             break;
@@ -468,6 +484,17 @@ function bufferWriteByDataType(buffer, data, type, offset, length = 1) {
             buffer.writeUInt8(data.getUTCSeconds(), offset + 7);
             buffer.writeUInt32BE(data.getUTCMilliseconds() * 1e6, offset + 8);
             break;
+        /** Reversed datatypes (little-endian) */
+        case "RREAL":
+            return buffer.writeFloatLE(data, offset);
+        case "RDWORD":
+            return buffer.writeUInt32LE(data, offset);
+        case "RDINT":
+            return buffer.writeInt32LE(data, offset);
+        case "RINT":
+            return buffer.writeInt16LE(data, offset);
+        case "RWORD":
+            return buffer.writeUInt16LE(data, offset);
         default:
             throw new Error(`Cannot parse data of unknown type "${this._props.datatype}" for item "${this._string}"`);
     }

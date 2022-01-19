@@ -96,6 +96,11 @@ class AddressParserNodeS7 {
                 case "WORD":
                 case "DWORD":
                 case "REAL":
+                case "RINT":
+                case "RDINT":
+                case "RWORD":
+                case "RDWORD":
+                case "RREAL":
                 case "DT":
                 case "DTZ":
                 case "DTL":
@@ -126,6 +131,22 @@ class AddressParserNodeS7 {
                     break;
                 case "R":
                     dataType = "REAL";
+                    break;
+                case "RI":
+                    dataType = "RINT";
+                    break;
+                case "RDI":
+                    dataType = "RDINT";
+                    break;
+                case "RW":
+                    dataType = "RWORD";
+                    break;
+                case "RD":
+                case "RDW":
+                    dataType = "RDWORD";
+                    break;
+                case "RR":
+                    dataType = "RREAL";
                     break;
                 default:
                     throw new NodeS7Error('ERR_PARSE_DB_DATATYPE', `Unknown DB data type "${match_area}" for address "${address}"`, { item: address });
@@ -188,6 +209,22 @@ class AddressParserNodeS7 {
                     break;
                 case "R":
                     dataType = "REAL";
+                    break;
+                case "RI":
+                    dataType = "RINT";
+                    break;
+                case "RDI":
+                    dataType = "RDINT";
+                    break;
+                case "RW":
+                    dataType = "RWORD";
+                    break;
+                case "RD":
+                case "RDW":
+                    dataType = "RDWORD";
+                    break;
+                case "RR":
+                    dataType = "RREAL";
                     break;
                 default:
                     throw new NodeS7Error('ERR_PARSE_DATATYPE', `Unknown data type "${dataType}" for address "${address}"`, { item: address });
@@ -256,10 +293,15 @@ class AddressParserNodeS7 {
             case "REAL":
             case "DWORD":
             case "DINT":
+            case "RREAL":
+            case "RDWORD":
+            case "RDINT":
                 dataTypeLength = 4;
                 break;
             case "INT":
             case "WORD":
+            case "RINT":
+            case "RWORD":
             case "TIMER":
             case "COUNTER":
                 dataTypeLength = 2;
