@@ -132,6 +132,22 @@ class AddressParserNodeS7 {
                 case "R":
                     dataType = "REAL";
                     break;
+                case "RI":
+                    dataType = "RINT";
+                    break;
+                case "RDI":
+                    dataType = "RDINT";
+                    break;
+                case "RW":
+                    dataType = "RWORD";
+                    break;
+                case "RD":
+                case "RDW":
+                    dataType = "RDWORD";
+                    break;
+                case "RR":
+                    dataType = "RREAL";
+                    break;
                 default:
                     throw new NodeS7Error('ERR_PARSE_DB_DATATYPE', `Unknown DB data type "${match_area}" for address "${address}"`, { item: address });
             }
@@ -193,6 +209,22 @@ class AddressParserNodeS7 {
                     break;
                 case "R":
                     dataType = "REAL";
+                    break;
+                case "RI":
+                    dataType = "RINT";
+                    break;
+                case "RDI":
+                    dataType = "RDINT";
+                    break;
+                case "RW":
+                    dataType = "RWORD";
+                    break;
+                case "RD":
+                case "RDW":
+                    dataType = "RDWORD";
+                    break;
+                case "RR":
+                    dataType = "RREAL";
                     break;
                 default:
                     throw new NodeS7Error('ERR_PARSE_DATATYPE', `Unknown data type "${dataType}" for address "${address}"`, { item: address });
