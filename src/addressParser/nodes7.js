@@ -96,6 +96,11 @@ class AddressParserNodeS7 {
                 case "WORD":
                 case "DWORD":
                 case "REAL":
+                case "RINT":
+                case "RDINT":
+                case "RWORD":
+                case "RDWORD":
+                case "RREAL":
                 case "DT":
                 case "DTZ":
                 case "DTL":
