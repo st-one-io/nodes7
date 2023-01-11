@@ -186,7 +186,7 @@ class S7Endpoint extends EventEmitter {
             this._transport.on('end', () => this._onTransportEnd());
             this._createS7Connection();
             this._connection.connect();
-        }).catch((e) => this._onTransportError(e));
+        }).catch(e => this._onTransportError(e));
     }
  
     /**
@@ -203,7 +203,7 @@ class S7Endpoint extends EventEmitter {
             const handleRejection = e => reject(e);
 
             this._transport = isoOnTcp.createConnection(this._connOptsTcp, () => {
-                this._transport.off("error", handleRejection);
+                this._transport.off('error', handleRejection);
                 resolve(this._transport);
             });
             this._transport.on('error', handleRejection);
