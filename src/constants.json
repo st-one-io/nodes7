@@ -40,7 +40,8 @@
             "TIMER": 29,
             "IEC_COUNTER": 30,
             "IEC_TIMER": 31,
-            "HS_COUNTER": 32
+            "HS_COUNTER": 32,
+            "LREAL": 48
         },
         "dataTransport": {
             "NULL": 0,
