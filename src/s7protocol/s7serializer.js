@@ -34,7 +34,7 @@ function serializeParamItems(buf, items, ptr) {
     return ptr;
 }
 
-function serializeDataItems(buf, items, ptr) {
+function serializeDataItems(buf, items, ptr, withPadding = false) {
     for (let i = 0; i < items.length; i++) {
         let elm = items[i];
         buf.writeUInt8(elm.returnCode || 0, ptr++); //varSpec
@@ -50,7 +50,7 @@ function serializeDataItems(buf, items, ptr) {
         ptr += 2;
         elm.data.copy(buf, ptr);
         ptr += elm.data.length;
-        if ((elm.data.length % 2) && (i < items.length - 1)) {
+        if (withPadding && (elm.data.length % 2) && (i < items.length - 1)) {
             //pad even data fields
             ptr += 1;
         }
@@ -102,10 +102,6 @@ class S7Serializer extends Transform {
                     for (let i = 0; i < chunk.data.items.length; i++) {
                         let e = chunk.data.items[i]
                         dataLength += 4 + e.data.length;
-                        if ((e.data.length % 2) && (i < chunk.data.items.length)) {
-                            // padding if data is even, but not the last one
-                            dataLength += 1;
-                        }
                     }
                 }
                 buf = Buffer.alloc(10 + parameterLength + dataLength);
@@ -212,7 +208,7 @@ class S7Serializer extends Transform {
                 buf.writeUInt8(chunk.param.itemCount, 13);
 
                 if (chunk.param.function == constants.proto.function.READ_VAR) {
-                    serializeDataItems(buf, chunk.data.items, 12 + parameterLength);
+                    serializeDataItems(buf, chunk.data.items, 12 + parameterLength, true);
                 } else {
                     for (let i = 0; i < chunk.data.items.length; i++) {
                         const elm = chunk.data.items[i];

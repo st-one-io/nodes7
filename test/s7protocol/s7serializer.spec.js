@@ -426,8 +426,9 @@ describe('S7Protocol Serializer', () => {
     it('should encode a Request -> WriteVar (bit item)', (done) => {
         let serializer = new S7Serializer();
         serializer.on('data', (data) => {
-            //expect(data.toString('hex')).to.be.equal('320100000003000e00050501120a100100010001840000000003000101');
-            expect(data.toString('hex')).to.be.equal('320100000003000e00060501120a10010001000184000000000300010100');
+            expect(data.toString('hex')).to.be.equal('320100000003000e00050501120a100100010001840000000003000101');
+            // there should NOT be a padding on the request of items. The following commented line is wrong
+            //expect(data.toString('hex')).to.be.equal('320100000003000e00060501120a10010001000184000000000300010100');
             done();
         });
 
