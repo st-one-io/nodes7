@@ -174,10 +174,20 @@ class S7Endpoint extends EventEmitter {
         process.nextTick(() => this.emit('connecting'));
 
         this._connectionState = CONN_CONNECTING;
+        let timedOut = false;
 
         let race = Promise.race([
-            this._getTransport(),
-            new Promise((res, rej) => setTimeout(() => rej(new NodeS7Error('ERR_TIMEOUT', 'Timeout connecting to the transport')), 10000).unref())
+            this._getTransport().then((transport) => {
+                if (timedOut) {
+                    transport.destroy();
+                }
+
+                return transport;
+            }),
+            new Promise((res, rej) => setTimeout(() => {
+                timedOut = true;
+                rej(new NodeS7Error('ERR_TIMEOUT', 'Timeout connecting to the transport'));
+            }, 10000).unref())
         ]);
 
         race.then(transport => {
