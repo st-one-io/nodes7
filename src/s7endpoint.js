@@ -284,7 +284,7 @@ class S7Endpoint extends EventEmitter {
 
         if (!this._transport) return;
 
-        this._transport.end();
+        this._transport.destroy();
     }
 
     /**
