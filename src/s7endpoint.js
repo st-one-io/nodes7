@@ -180,8 +180,7 @@ class S7Endpoint extends EventEmitter {
             new Promise((res, rej) => setTimeout(() => rej(new NodeS7Error('ERR_TIMEOUT', 'Timeout connecting to the transport')), 10000).unref())
         ]);
 
-        race.then(transport => {
-            this._transport = transport;
+        race.then((transport) => {
             this._transport.on('error', e => this._onTransportError(e));
             this._transport.on('close', () => this._onTransportClose());
             this._transport.on('end', () => this._onTransportEnd());
@@ -189,7 +188,7 @@ class S7Endpoint extends EventEmitter {
             this._connection.connect();
         }).catch(e => this._onTransportError(e));
     }
-
+ 
     /**
      * Creates an ISO-on-TCP transport with the parameters
      * supplied on the constructor
@@ -203,11 +202,11 @@ class S7Endpoint extends EventEmitter {
             // handler to reject the promise on connection-time errors
             const handleRejection = e => reject(e);
 
-            let stream = isoOnTcp.createConnection(this._connOptsTcp, () => {
-                stream.off('error', handleRejection);
-                resolve(stream);
+            this._transport = isoOnTcp.createConnection(this._connOptsTcp, () => {
+                this._transport.off('error', handleRejection);
+                resolve(this._transport);
             });
-            stream.on('error', handleRejection);
+            this._transport.on('error', handleRejection);
         })
     }
 
