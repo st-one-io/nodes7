@@ -529,6 +529,7 @@ class S7Endpoint extends EventEmitter {
         if (this._connectionState !== CONN_CONNECTED) {
             throw new NodeS7Error('ERR_NOT_CONNECTED', "Not connected");
         }
+        address = Number(address);
 
         let maxPayload = this._pduSize - 18; //protocol overhead
         let requests = [];
@@ -692,6 +693,7 @@ class S7Endpoint extends EventEmitter {
         if (this._connectionState !== CONN_CONNECTED) {
             throw new NodeS7Error('ERR_NOT_CONNECTED', "Not connected");
         }
+        address = Number(address);
 
         let maxPayload = this._pduSize - 28; //protocol overhead
         let requests = [];
