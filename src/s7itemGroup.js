@@ -479,7 +479,9 @@ class S7ItemGroup extends EventEmitter {
             }
 
             let buf = item.getWriteBuffer(value);
-            let reqItemLength = overheadPerItem + buf.length;
+            // odd-length data is followed by a fill byte (except the last item of the request);
+            // count it so the request never exceeds the PDU size
+            let reqItemLength = overheadPerItem + buf.length + (buf.length % 2);
 
             // TODO - maybe we can split an item in multiple write request parts
             if (reqItemLength > maxPayloadSize) {

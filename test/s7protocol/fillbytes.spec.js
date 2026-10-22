@@ -96,4 +96,35 @@ describe('S7 fill bytes', () => {
             expect(msg.data.items.map(i => i.data[0])).to.deep.equal(values);
         });
     });
+
+    describe('writeItems request splitting (#8)', () => {
+
+        for (const pduSize of [240, 480, 960]) {
+            it(`keeps every request within a ${pduSize}-byte PDU with many single-byte items`, async () => {
+                const endpoint = fakeEndpoint(pduSize);
+                const group = new S7ItemGroup(endpoint);
+                group.setTranslationCB(tag => tag);
+                const tags = [];
+                const values = [];
+                for (let i = 0; i < 120; i++) {
+                    tags.push(`DB1,X${i}.${i % 8}`);
+                    values.push(i % 2 === 0);
+                }
+                await group.writeItems(tags, values);
+
+                expect(endpoint.writes.length).to.be.greaterThan(1);
+                let written = 0;
+                for (const items of endpoint.writes) {
+                    const buf = await serialize({
+                        header: { type: proto.type.REQUEST, rid: 0, pduReference: 1 },
+                        param: { function: proto.function.WRITE_VAR, items: items },
+                        data: { items: items.map(i => ({ returnCode: 0, transportSize: i.dataTransport, data: i.data })) }
+                    });
+                    expect(buf.length, `request of ${items.length} items`).to.be.at.most(pduSize);
+                    written += items.length;
+                }
+                expect(written).to.equal(120);
+            });
+        }
+    });
 });
