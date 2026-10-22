@@ -23,7 +23,7 @@
   },
   "main": "src/index.js",
   "scripts": {
-    "test": "nyc --reporter=html --reporter=text --reporter=text-summary mocha --timeout=3000 test/**/**.spec.js",
+    "test": "nyc --reporter=html --reporter=text --reporter=text-summary mocha --require test/setup.js --timeout=3000 test/**/**.spec.js",
     "doc": "jsdoc2md --files src/**.js > doc/API.md"
   },
   "engine": {
