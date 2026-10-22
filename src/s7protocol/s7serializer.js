@@ -102,13 +102,18 @@ class S7Serializer extends Transform {
                     for (let i = 0; i < chunk.data.items.length; i++) {
                         let e = chunk.data.items[i]
                         dataLength += 4 + e.data.length;
+                        if ((e.data.length % 2) && (i < chunk.data.items.length - 1)) {
+                            // fill byte after odd-length data, except for the last item
+                            dataLength += 1;
+                        }
                     }
                 }
                 buf = Buffer.alloc(10 + parameterLength + dataLength);
 
                 serializeParamItems(buf, chunk.param.items, 11);
                 if (chunk.param.function == constants.proto.function.WRITE_VAR) {
-                    serializeDataItems(buf, chunk.data.items, 10 + parameterLength);
+                    // write requests need the fill bytes too (S7Parser expects them, so do PLCs)
+                    serializeDataItems(buf, chunk.data.items, 10 + parameterLength, true);
                 }
                 break;
 
