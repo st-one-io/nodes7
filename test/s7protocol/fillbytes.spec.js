@@ -127,4 +127,37 @@ describe('S7 fill bytes', () => {
             });
         }
     });
+
+    describe('read packet optimization (#17)', () => {
+
+        // response length as the PLC builds it: header + per item 4-byte header, data, fill byte
+        function responseLength(packet) {
+            let length = 14;
+            packet.forEach((part, i) => {
+                length += 4 + part.length;
+                if ((part.length % 2) && i < packet.length - 1) length += 1;
+            });
+            return length;
+        }
+
+        for (const pduSize of [240, 480, 960]) {
+            it(`keeps every response within a ${pduSize}-byte PDU with many odd-length parts`, () => {
+                const group = new S7ItemGroup(fakeEndpoint(pduSize));
+                const vars = {};
+                // 40 items of 21 bytes, 42 bytes apart, so they cannot be merged into one part
+                for (let i = 0; i < 40; i++) vars['TAG' + i] = `DB1,B${i * 42}.21`;
+                group.setTranslationCB(tag => vars[tag]);
+                group.addItems(Object.keys(vars));
+                group._prepareReadPackets();
+
+                const packets = group._readPackets;
+                expect(packets.length).to.be.greaterThan(0);
+                for (const packet of packets) {
+                    expect(responseLength(packet)).to.be.at.most(pduSize);
+                }
+                const covered = new Set(packets.flatMap(p => p.flatMap(part => part.items.map(it => it._string))));
+                expect(covered.size).to.equal(40);
+            });
+        }
+    });
 });

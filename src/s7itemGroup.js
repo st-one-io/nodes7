@@ -100,7 +100,10 @@ class S7ItemGroup extends EventEmitter {
         const reqHeaderSize = 12;
         const resHeaderSize = 14;
         const reqPartSize = 12;
-        const resPartSize = 4;
+        // 4-byte data item header, plus 1 byte reserved for the fill byte that pads odd-length
+        // data in the response (all but the last item). Reserving it for every part may waste a
+        // byte per packet, but the response can never exceed the PDU size.
+        const resPartSize = 4 + 1;
         const maxPayloadSize = this._endpoint.pduSize - 18;
 
         debug('S7ItemGroup _prepareReadPackets maxPayloadSize', maxPayloadSize);
