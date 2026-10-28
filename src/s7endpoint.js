@@ -698,7 +698,7 @@ class S7Endpoint extends EventEmitter {
         let requests = [];
         let dataLength = data.length;
         for (let ptr = 0; ptr < dataLength; ptr += maxPayload) {
-            let chunk = data.slice(ptr, Math.min(ptr + maxPayload, dataLength))
+            let chunk = data.slice(ptr, Math.min(dataLength - ptr, maxPayload))
             let item = [{
                 area, db,
                 address: address + ptr,
