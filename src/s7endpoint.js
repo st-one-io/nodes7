@@ -530,6 +530,9 @@ class S7Endpoint extends EventEmitter {
             throw new NodeS7Error('ERR_NOT_CONNECTED', "Not connected");
         }
         address = Number(address);
+        if (!Number.isInteger(address) || address < 0) {
+            throw new NodeS7Error('ERR_INVALID_ARGUMENT', `Invalid address [${address}]`);
+        }
 
         let maxPayload = this._pduSize - 18; //protocol overhead
         let requests = [];
@@ -693,12 +696,16 @@ class S7Endpoint extends EventEmitter {
         if (this._connectionState !== CONN_CONNECTED) {
             throw new NodeS7Error('ERR_NOT_CONNECTED', "Not connected");
         }
+        address = Number(address);
+        if (!Number.isInteger(address) || address < 0) {
+            throw new NodeS7Error('ERR_INVALID_ARGUMENT', `Invalid address [${address}]`);
+        }
 
         let maxPayload = this._pduSize - 28; //protocol overhead
         let requests = [];
         let dataLength = data.length;
         for (let ptr = 0; ptr < dataLength; ptr += maxPayload) {
-            let chunk = data.slice(ptr, Math.min(dataLength - ptr, maxPayload))
+            let chunk = data.slice(ptr, Math.min(ptr + maxPayload, dataLength))
             let item = [{
                 area, db,
                 address: address + ptr,
