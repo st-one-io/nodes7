@@ -274,6 +274,8 @@ function toBCD(n) {
 function getValueByDataType(buffer, type, offset, bitOffset, length = 1) {
     let year, month, day, hour, min, sec, ms_1, ms_2, ns;
     switch (type) {
+        case "LREAL":
+            return buffer.readDoubleBE(offset);
         case "REAL":
             return buffer.readFloatBE(offset);
         case "DWORD":
@@ -369,6 +371,7 @@ function bufferWriteByDataType(buffer, data, type, offset, length = 1) {
 
     // type check
     switch (type) {
+        case "LREAL":
         case "REAL":
         case "DWORD":
         case "DINT":
@@ -420,6 +423,8 @@ function bufferWriteByDataType(buffer, data, type, offset, length = 1) {
 
 
     switch (type) {
+        case "LREAL":
+            return buffer.writeDoubleBE(data, offset);
         case "REAL":
             return buffer.writeFloatBE(data, offset);
         case "DWORD":

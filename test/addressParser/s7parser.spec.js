@@ -135,6 +135,9 @@ describe('NodeS7 Address Parser', () => {
     decodeAddress('DB8,D18.2', 'DB', 'DWORD', 4, 18, 0, 2, 8, R_BYTE, W_BYTE, A_DB, 8, 8);
     decodeAddress('DB7,R22', 'DB', 'REAL', 4, 22, 0, 1, 7, R_BYTE, W_BYTE, A_DB, 4, 4);
     decodeAddress('DB7,REAL22', 'DB', 'REAL', 4, 22, 0, 1, 7, R_BYTE, W_BYTE, A_DB, 4, 4);
+    decodeAddress('DB7,LR24', 'DB', 'LREAL', 8, 24, 0, 1, 7, R_BYTE, W_BYTE, A_DB, 8, 8);
+    decodeAddress('DB7,LREAL24', 'DB', 'LREAL', 8, 24, 0, 1, 7, R_BYTE, W_BYTE, A_DB, 8, 8);
+    decodeAddress('DB7,LREAL24.2', 'DB', 'LREAL', 8, 24, 0, 2, 7, R_BYTE, W_BYTE, A_DB, 16, 16);
     decodeAddress('DB6,DT72', 'DB', 'DT', 8, 72, 0, 1, 6, R_BYTE, W_BYTE, A_DB, 8, 8);
     decodeAddress('DB6,DT32.2', 'DB', 'DT', 8, 32, 0, 2, 6, R_BYTE, W_BYTE, A_DB, 16, 16);
     decodeAddress('DB6,DTZ72', 'DB', 'DTZ', 8, 72, 0, 1, 6, R_BYTE, W_BYTE, A_DB, 8, 8);
@@ -148,6 +151,7 @@ describe('NodeS7 Address Parser', () => {
     decodeAddress('MC0', 'M', 'CHAR', 1, 0, 0, 1, undefined, R_BYTE, W_BYTE, A_FLAGS, 1, 1);
     decodeAddress('MI2', 'M', 'INT', 2, 2, 0, 1, undefined, R_BYTE, W_BYTE, A_FLAGS, 2, 2);
     decodeAddress('MDI4', 'M', 'DINT', 4, 4, 0, 1, undefined, R_BYTE, W_BYTE, A_FLAGS, 4, 4);
+    decodeAddress('MLR16', 'M', 'LREAL', 8, 16, 0, 1, undefined, R_BYTE, W_BYTE, A_FLAGS, 8, 8);
     decodeAddress('MW8.2', 'M', 'WORD', 2, 8, 0, 2, undefined, R_BYTE, W_BYTE, A_FLAGS, 4, 4);
     decodeAddress('MD12', 'M', 'DWORD', 4, 12, 0, 1, undefined, R_BYTE, W_BYTE, A_FLAGS, 4, 4);
     decodeAddress('MDW12', 'M', 'DWORD', 4, 12, 0, 1, undefined, R_BYTE, W_BYTE, A_FLAGS, 4, 4);
