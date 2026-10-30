@@ -52,3 +52,11 @@ plc.once('connect', async () => {
 ## Documentation
 
 Please check the [API documentation](doc/API.md), specially the [S7Endpoint](doc/API.md#S7Endpoint) and [S7ItemGroup](doc/API.md#S7ItemGroup) sections
+## Tests
+
+```bash
+npm test                    # unit tests
+npm run test:integration    # against a strict S7 PLC simulator (needs uv: https://docs.astral.sh/uv/)
+```
+
+The integration tests start `test/integration/s7-sim.py`, a python-snap7 server that, like a real CPU, applies every item of a multi-item write, requires the S7comm fill bytes and refuses requests or responses larger than the negotiated PDU. `NODES7_DIR` runs them against another build of the library.
