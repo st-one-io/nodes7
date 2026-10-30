@@ -98,8 +98,44 @@ describe('S7 fill bytes', () => {
     });
 
     describe('writeItems request splitting (#8)', () => {
+        for (const pduSize of [61, 239, 241]) {
+            it(`accepts an exact-fit odd write in a ${pduSize}-byte PDU`, async () => {
+                const endpoint = fakeEndpoint(pduSize);
+                const group = new S7ItemGroup(endpoint);
+                group.setTranslationCB(tag => tag);
+                const length = pduSize - 28;
+                await group.writeItems([`DB1,BYTE0.${length}`], [Array(length).fill(0x5a)]);
+                expect(endpoint.writes).to.have.length(1);
+                const items = endpoint.writes[0];
+                const buf = await serialize({
+                    header: { type: proto.type.REQUEST, rid: 0, pduReference: 1 },
+                    param: { function: proto.function.WRITE_VAR, items },
+                    data: { items: items.map(i => ({ returnCode: 0, transportSize: i.dataTransport, data: i.data })) }
+                });
+                expect(buf.length).to.equal(pduSize);
+                // The previous odd item needs padding; the final odd item does not.
+                endpoint.writes.length = 0;
+                const lastLength = pduSize - 46;
+                await group.writeItems(['DB1,BYTE0', `DB1,BYTE2.${lastLength}`, 'DB1,BYTE500'],
+                    [1, Array(lastLength).fill(2), 3]);
+                expect(endpoint.writes.map(parts => parts.length)).to.deep.equal([2, 1]);
+                const first = endpoint.writes[0];
+                const packed = await serialize({
+                    header: { type: proto.type.REQUEST, rid: 0, pduReference: 1 },
+                    param: { function: proto.function.WRITE_VAR, items: first },
+                    data: { items: first.map(i => ({ returnCode: 0, transportSize: i.dataTransport, data: i.data })) }
+                });
+                expect(packed.length).to.equal(pduSize);
+                let error;
+                try {
+                    await group.writeItems([`DB1,BYTE0.${length + 1}`], [Array(length + 1).fill(0)]);
+                } catch (err) { error = err; }
+                expect(error).to.have.property('code', 'ERR_ITEM_TOO_BIG');
+            });
+        }
 
-        for (const pduSize of [240, 480, 960]) {
+
+        for (const pduSize of [61, 93, 239, 240, 241, 479, 480, 960, 961]) {
             it(`keeps every request within a ${pduSize}-byte PDU with many single-byte items`, async () => {
                 const endpoint = fakeEndpoint(pduSize);
                 const group = new S7ItemGroup(endpoint);
@@ -129,6 +165,21 @@ describe('S7 fill bytes', () => {
     });
 
     describe('read packet optimization (#17)', () => {
+        it('preserves every byte of overlapping items at the split boundary', async () => {
+            const endpoint = fakeEndpoint(61);
+            endpoint.readVars = async parts => parts.map(part => ({
+                returnCode: proto.retval.DATA_OK,
+                data: Buffer.from(Array.from({ length: part.length }, (_, i) => (part.address + i) & 0xff))
+            }));
+            const group = new S7ItemGroup(endpoint);
+            const tags = { a: 'DB1,BYTE0.25', b: 'DB1,BYTE23.20' };
+            group.setTranslationCB(tag => tags[tag]);
+            group.addItems(Object.keys(tags));
+            const result = await group.readAllItems();
+            expect(Array.from(result.a)).to.deep.equal(Array.from({ length: 25 }, (_, i) => i));
+            expect(Array.from(result.b)).to.deep.equal(Array.from({ length: 20 }, (_, i) => 23 + i));
+        });
+
 
         // response length as the PLC builds it: header + per item 4-byte header, data, fill byte
         function responseLength(packet) {
@@ -140,7 +191,7 @@ describe('S7 fill bytes', () => {
             return length;
         }
 
-        for (const pduSize of [240, 480, 960]) {
+        for (const pduSize of [61, 93, 239, 240, 241, 479, 480, 960, 961]) {
             it(`keeps every response within a ${pduSize}-byte PDU with many odd-length parts`, () => {
                 const group = new S7ItemGroup(fakeEndpoint(pduSize));
                 const vars = {};

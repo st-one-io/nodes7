@@ -100,10 +100,9 @@ class S7ItemGroup extends EventEmitter {
         const reqHeaderSize = 12;
         const resHeaderSize = 14;
         const reqPartSize = 12;
-        // 4-byte data item header, plus 1 byte reserved for the fill byte that pads odd-length
-        // data in the response (all but the last item). Reserving it for every part may waste a
-        // byte per packet, but the response can never exceed the PDU size.
-        const resPartSize = 4 + 1;
+        const resPartSize = 4;
+        // Only a part followed by another part owes a fill byte.
+        const fillOf = part => part.length % 2;
         const maxPayloadSize = this._endpoint.pduSize - 18;
 
         debug('S7ItemGroup _prepareReadPackets maxPayloadSize', maxPayloadSize);
@@ -168,24 +167,25 @@ class S7ItemGroup extends EventEmitter {
                     part.items.push(item);
 
                     /* conditions to just add a new part to the current packet, without creating a new one*/
-                } else if (packet
+                } else if (packet && part
                     && (pktReqLength + reqPartSize) <= maxPayloadSize
-                    && (pktResLength + resPartSize + minRequiredLength) <= maxPayloadSize
+                    && (pktResLength + fillOf(part) + resPartSize + minRequiredLength) <= maxPayloadSize
                 ) {
                     debug('S7ItemGroup _prepareReadPackets item-new-part', item._string);
 
+                    const previousFill = fillOf(part);
                     let partLength;
                     let partOffset = itemOffset;
 
                     // test if the whole item fits in this part
-                    if ((pktResLength + resPartSize + itemLength) <= maxPayloadSize) {
+                    if ((pktResLength + previousFill + resPartSize + itemLength) <= maxPayloadSize) {
 
                         partLength = itemLength;
                         itemComplete = true;
                         debug('S7ItemGroup _prepareReadPackets item-new-part complete');
                     } else {
                         //doesn't fit, just put what we can
-                        let consumedItemLength = maxPayloadSize - pktResLength - resPartSize;
+                        let consumedItemLength = maxPayloadSize - pktResLength - previousFill - resPartSize;
                         partLength = consumedItemLength;
                         itemOffset += consumedItemLength;
                         itemLength -= consumedItemLength;
@@ -205,7 +205,7 @@ class S7ItemGroup extends EventEmitter {
                     packet.push(part);
 
                     pktReqLength += reqPartSize;
-                    pktResLength += resPartSize + partLength;
+                    pktResLength += previousFill + resPartSize + partLength;
 
                     /* nothing else we can optimize, create a new packet */
                 } else {
@@ -277,7 +277,7 @@ class S7ItemGroup extends EventEmitter {
 
                 const part = packet[j];
                 lengthReq += reqPartSize;
-                lengthRes += resPartSize + part.length;
+                lengthRes += resPartSize + part.length + (j < packet.length - 1 ? fillOf(part) : 0);
                 debug('S7ItemGroup _prepareReadPackets part #', i, j, part.area, part.db, part.address, part.length);
 
                 for (let k = 0; k < part.items.length; k++) {
@@ -482,9 +482,8 @@ class S7ItemGroup extends EventEmitter {
             }
 
             let buf = item.getWriteBuffer(value);
-            // odd-length data is followed by a fill byte (except the last item of the request);
-            // count it so the request never exceeds the PDU size
-            let reqItemLength = overheadPerItem + buf.length + (buf.length % 2);
+            // The candidate is the last item, so its fill byte is not needed to fit.
+            let reqItemLength = overheadPerItem + buf.length;
 
             // TODO - maybe we can split an item in multiple write request parts
             if (reqItemLength > maxPayloadSize) {
@@ -498,7 +497,8 @@ class S7ItemGroup extends EventEmitter {
                 curRequestLength = 0;
             }
 
-            curRequestLength += reqItemLength;
+            // Reserve padding only for a subsequent item in this request.
+            curRequestLength += reqItemLength + (buf.length % 2);
 
             let bitAddr = item.writeTransportCode === constants.proto.dataTransport.BBIT;
             reqItems.push({
