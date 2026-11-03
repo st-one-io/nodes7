@@ -82,6 +82,8 @@ describe('S7Item', () => {
     testReadData('II8.4', [-1, 1, 32767, -32768], Buffer.from('ffff00017fff8000', 'hex'));
     testReadData('QDI32.4', [-1, 1, 2147483647, -2147483648], Buffer.from('ffffffff000000017fffffff80000000', 'hex'));
     testReadData('DB1,REAL0.2', [3, 1234.5], Buffer.from('40400000449a5000', 'hex'));
+    testReadData('DB1,LREAL0', 3.141592653589793, Buffer.from('400921fb54442d18', 'hex'));
+    testReadData('DB1,LREAL0.2', [3.141592653589793, -1234.5], Buffer.from('400921fb54442d18c0934a0000000000', 'hex'));
 
     it('should read the value of item DB1,DT0', done => {
         let item = new S7Item("Item", "DB1,DT0");
@@ -191,6 +193,7 @@ describe('S7Item', () => {
     testWriteData('QDI11.5', [0, 1, -1, 2147483647, -2147483648], '0000000000000001ffffffff7fffffff80000000');
     testWriteData('DB2,CHAR2', 'C', '43');
     testWriteData('DB2,CHAR2.5', 'CCDCE', '4343444345');
+    testWriteData('DB2,LREAL8', 3.141592653589793, '400921fb54442d18');
     testWriteData('DB2,C2.5', 'CE', '4345000000');
     testWriteData('DB2,S0.6', 'st-one', '060673742d6f6e65');
     testWriteData('DB4,S2.5', 'smart-tech', '0505736d617274');
