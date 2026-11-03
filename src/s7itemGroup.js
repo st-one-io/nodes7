@@ -133,6 +133,7 @@ class S7ItemGroup extends EventEmitter {
                 /* conditions to add to the same part*/
                 if (packet && part
                     && this._isOptimizable(lastItem, item)
+                    && itemOffset >= part.address
                     && (pktResLength + (itemOffset + minRequiredLength) - (part.address + part.length) <= maxPayloadSize)
                 ) {
                     debug('S7ItemGroup _prepareReadPackets optimize', item._string);
