@@ -445,7 +445,8 @@ class S7Connection extends EventEmitter {
             let errCode = resMsg && resMsg.param && resMsg.param.errorCode;
             if (errCode != constants.proto.error.OK) {
                 let errDesc = constants.proto.errorCodeDesc[errCode] || '<Unknown error code>'
-                throw new NodeS7Error(errCode, `Unexpected error code reply on userdata response [${errCode}]: "${errDesc}"`);
+                let returnCode = resMsg && resMsg.data && resMsg.data.returnCode;
+                throw new NodeS7Error(errCode, `Unexpected error code reply on userdata response [${errCode}]: "${errDesc}"`, { returnCode });
             }
 
             seqNum = resMsg.param.sequenceNumber;
@@ -586,8 +587,17 @@ class S7Connection extends EventEmitter {
 
         let req = Buffer.from(blkTypeString);
 
-        let res = await this.sendUserData(constants.proto.userData.function.BLOCK_FUNC,
-            constants.proto.userData.subfunction.BLOCK_FUNC.TYPE, req);
+        let res;
+        try {
+            res = await this.sendUserData(constants.proto.userData.function.BLOCK_FUNC,
+                constants.proto.userData.subfunction.BLOCK_FUNC.TYPE, req);
+        } catch (e) {
+            // PLC replies "Object does not exist" when there's no block of this type
+            if (e.info && e.info.returnCode === constants.proto.retval.DATA_ERR) {
+                return [];
+            }
+            throw e;
+        }
 
         if (res.length % 4) {
             throw new NodeS7Error('ERR_UNEXPECTED_RESPONSE', `Expecting listBlocks response length to be multiple of 4 (got [${res.length}])`);
